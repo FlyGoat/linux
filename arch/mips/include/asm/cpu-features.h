@@ -185,8 +185,15 @@
 #ifndef cpu_has_ejtag
 #define cpu_has_ejtag		__opt(MIPS_CPU_EJTAG)
 #endif
+
 #ifndef cpu_has_llsc
-#define cpu_has_llsc		__isa_ge_or_opt(1, MIPS_CPU_LLSC)
+# if defined(CONFIG_CPU_HAS_LLSC)
+#  define cpu_has_llsc		1
+# elif defined(CONFIG_CPU_MAY_HAVE_LLSC)
+#  define cpu_has_llsc		__opt(MIPS_CPU_LLSC)
+# else
+#  define cpu_has_llsc		0
+# endif
 #endif
 #ifndef kernel_uses_llsc
 #define kernel_uses_llsc	cpu_has_llsc
