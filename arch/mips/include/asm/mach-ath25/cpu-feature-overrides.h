@@ -24,14 +24,12 @@
 #define cpu_has_counter			1
 #define cpu_has_ejtag			1
 
-#if !defined(CONFIG_SOC_AR5312)
-#  define cpu_has_llsc			1
-#else
 /*
  * The MIPS 4Kc V0.9 core in the AR5312/AR2312 have problems with the
  * ll/sc instructions.
  */
-#  define cpu_has_llsc			0
+#if !defined(WAR_4KC_LLSC)
+#  define cpu_has_llsc			1
 #endif
 
 #define cpu_has_mips16			0

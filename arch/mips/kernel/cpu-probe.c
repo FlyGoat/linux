@@ -152,6 +152,15 @@ static inline void check_errata(void)
 	struct cpuinfo_mips *c = &current_cpu_data;
 
 	switch (current_cpu_type()) {
+	case CPU_4KC:
+		if ((c->processor_id & PRID_REV_MASK) < PRID_REV_4KC_V1_0) {
+			c->options &= ~MIPS_CPU_LLSC;
+			if (cpu_has_llsc) {
+				pr_crit("CPU has LLSC erratum, but cpu_has_llsc is force enabled!\n");
+				add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_STILL_OK);
+			}
+		}
+		break;
 	case CPU_34K:
 		/*
 		 * Erratum "RPS May Cause Incorrect Instruction Execution"
