@@ -247,6 +247,7 @@
 #define PRID_REV_VR4122			0x0070
 #define PRID_REV_VR4181A		0x0070	/* Same as VR4122 */
 #define PRID_REV_VR4130			0x0080
+#define PRID_REV_4KC_V1_0		0x0001
 #define PRID_REV_34K_V1_0_2		0x0022
 #define PRID_REV_LOONGSON1B		0x0020
 #define PRID_REV_LOONGSON1C		0x0020	/* Same as Loongson-1B */
