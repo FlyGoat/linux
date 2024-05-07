@@ -11,6 +11,7 @@
 
 #include <cs5536/cs5536.h>
 #include <cs5536/cs5536_pci.h>
+#include <cs5536/cs5536_vsm.h>
 
 void pci_ohci_write_reg(int reg, u32 value)
 {

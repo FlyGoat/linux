@@ -12,6 +12,7 @@
 #include <linux/pci.h>
 #include <cs5536/cs5536.h>
 #include <cs5536/cs5536_pci.h>
+#include <cs5536/cs5536_vsm.h>
 
 /* common variables for PCI_ISA_READ/WRITE_BAR */
 static const u32 divil_msr_reg[6] = {
