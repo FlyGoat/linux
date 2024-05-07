@@ -9,7 +9,6 @@
 #include <asm/bootinfo.h>
 
 #include <loongson.h>
-#include <machine.h>
 
 /* please ensure the length of the machtype string is less than 50 */
 #define MACHTYPE_LEN 50
@@ -33,14 +32,13 @@ const char *get_system_type(void)
 
 void __weak __init mach_prom_init_machtype(void)
 {
+	mips_machtype = MACH_LEMOTE_FL2E;
 }
 
 void __init prom_init_machtype(void)
 {
 	char *p, str[MACHTYPE_LEN + 1];
 	int machtype = MACH_LEMOTE_FL2E;
-
-	mips_machtype = LOONGSON_MACHTYPE;
 
 	p = strstr(arcs_cmdline, "machtype=");
 	if (!p) {

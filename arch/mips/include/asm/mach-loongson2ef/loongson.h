@@ -25,6 +25,7 @@ extern u32 memsize, highmemsize;
 /* loongson-specific command line, env and memory initialization */
 extern void __init prom_init_memory(void);
 extern void __init prom_init_machtype(void);
+extern void __init mach_prom_init_machtype(void);
 extern void __init prom_init_env(void);
 #ifdef CONFIG_LOONGSON_UART_BASE
 extern unsigned long _loongson_uart_base, loongson_uart_base;
