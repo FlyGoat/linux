@@ -108,7 +108,7 @@ void pci_isa_write_bar(int n, u32 value)
  * BAR read: read the n BAR
  */
 
-u32 pci_isa_read_bar(int n)
+static u32 pci_isa_read_bar(int n)
 {
 	u32 conf_data = 0;
 	u32 hi, lo;
