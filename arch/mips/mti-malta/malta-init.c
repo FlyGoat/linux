@@ -284,12 +284,18 @@ mips_pci_controller:
 #ifdef CONFIG_SERIAL_8250_CONSOLE
 	console_config();
 #endif
-	/* Early detection of CMP support */
+}
+
+void __init device_tree_init(void)
+{
+	unflatten_and_copy_device_tree();
 	mips_cpc_probe();
 
 	if (!register_cps_smp_ops())
 		return;
 	if (!register_vsmp_smp_ops())
 		return;
+
 	register_up_smp_ops();
 }
+
