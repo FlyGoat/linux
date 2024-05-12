@@ -44,4 +44,7 @@ void __init plat_time_init(void)
 #ifdef CONFIG_RS780_HPET
 	setup_hpet_timer();
 #endif
+#ifdef CONFIG_LOONGSON_NODECNT
+	nodecnt_clocksource_init();
+#endif
 }
