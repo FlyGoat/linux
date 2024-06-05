@@ -108,13 +108,19 @@ notrace int sched_clock_stable(void)
 	return static_branch_likely(&__sched_clock_stable);
 }
 
+notrace static inline bool __unsafe_nmi_context(void)
+{
+	return in_nmi() && (IS_ENABLED(CONFIG_GENERIC_ATOMIC64) ||
+			    IS_ENABLED(CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG));
+}
+
 notrace static void __scd_stamp(struct sched_clock_data *scd)
 {
 	scd->tick_gtod = ktime_get_ns();
 	scd->tick_raw = sched_clock();
 }
 
-notrace static void __set_sched_clock_stable(void)
+notrace static void __set_sched_clock_offset(void)
 {
 	struct sched_clock_data *scd;
 
@@ -129,7 +135,13 @@ notrace static void __set_sched_clock_stable(void)
 	 */
 	__sched_clock_offset = (scd->tick_gtod + __gtod_offset) - (scd->tick_raw);
 	local_irq_enable();
+}
 
+notrace static void __set_sched_clock_stable(void)
+{
+	struct sched_clock_data *scd = this_scd();
+
+	__set_sched_clock_offset();
 	printk(KERN_INFO "sched_clock: Marking stable (%lld, %lld)->(%lld, %lld)\n",
 			scd->tick_gtod, __gtod_offset,
 			scd->tick_raw,  __sched_clock_offset);
@@ -214,7 +226,7 @@ void __init sched_clock_init(void)
 	local_irq_disable();
 	__sched_clock_gtod_offset();
 	local_irq_enable();
-
+	__set_sched_clock_offset();
 	static_branch_inc(&sched_clock_running);
 }
 /*
@@ -297,7 +309,7 @@ noinstr u64 local_clock_noinstr(void)
 {
 	u64 clock;
 
-	if (static_branch_likely(&__sched_clock_stable))
+	if (static_branch_likely(&__sched_clock_stable) || __unsafe_nmi_context())
 		return sched_clock_noinstr() + __sched_clock_offset;
 
 	if (!static_branch_likely(&sched_clock_running))
@@ -325,7 +337,7 @@ static notrace u64 sched_clock_remote(struct sched_clock_data *scd)
 	u64 old_val, val;
 	atomic64_t *ptr;
 
-#if BITS_PER_LONG != 64
+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
 again:
 	/*
 	 * Careful here: The local and the remote clock values need to
@@ -391,7 +403,7 @@ notrace u64 sched_clock_cpu(int cpu)
 	struct sched_clock_data *scd;
 	u64 clock;
 
-	if (sched_clock_stable())
+	if (sched_clock_stable() || __unsafe_nmi_context())
 		return sched_clock() + __sched_clock_offset;
 
 	if (!static_branch_likely(&sched_clock_running))
