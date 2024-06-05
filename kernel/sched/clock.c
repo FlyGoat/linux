@@ -88,7 +88,7 @@ static __read_mostly u64 __gtod_offset;
 struct sched_clock_data {
 	u64			tick_raw;
 	u64			tick_gtod;
-	u64			clock;
+	atomic64_t		clock;
 };
 
 static DEFINE_PER_CPU_SHARED_ALIGNED(struct sched_clock_data, sched_clock_data);
@@ -158,7 +158,7 @@ notrace static void __sched_clock_work(struct work_struct *work)
 	preempt_disable();
 	scd = this_scd();
 	__scd_stamp(scd);
-	scd->clock = scd->tick_gtod + __gtod_offset;
+	raw_atomic64_set(&scd->clock, scd->tick_gtod + __gtod_offset);
 	preempt_enable();
 
 	/* clone to all CPUs */
@@ -271,7 +271,7 @@ again:
 	if (unlikely(delta < 0))
 		delta = 0;
 
-	old_clock = scd->clock;
+	old_clock = raw_atomic64_read(&scd->clock);
 
 	/*
 	 * scd->clock = clamp(scd->tick_gtod + delta,
@@ -287,7 +287,7 @@ again:
 	clock = wrap_max(clock, min_clock);
 	clock = wrap_min(clock, max_clock);
 
-	if (!raw_try_cmpxchg64(&scd->clock, &old_clock, clock))
+	if (!raw_atomic64_try_cmpxchg(&scd->clock, &old_clock, clock))
 		goto again;
 
 	return clock;
@@ -322,7 +322,8 @@ static notrace u64 sched_clock_remote(struct sched_clock_data *scd)
 {
 	struct sched_clock_data *my_scd = this_scd();
 	u64 this_clock, remote_clock;
-	u64 *ptr, old_val, val;
+	u64 old_val, val;
+	atomic64_t *ptr;
 
 #if BITS_PER_LONG != 64
 again:
@@ -343,7 +344,7 @@ again:
 	 * update on the remote CPU can hit in between the readout of
 	 * the low 32-bit and the high 32-bit portion.
 	 */
-	remote_clock = cmpxchg64(&scd->clock, 0, 0);
+	remote_clock = raw_atomic64_cmpxchg(&scd->clock, 0, 0);
 #else
 	/*
 	 * On 64-bit kernels the read of [my]scd->clock is atomic versus the
@@ -351,8 +352,8 @@ again:
 	 */
 	sched_clock_local(my_scd);
 again:
-	this_clock = my_scd->clock;
-	remote_clock = scd->clock;
+	this_clock = raw_atomic64_read(&my_scd->clock);
+	remote_clock = raw_atomic64_read(&scd->clock);
 #endif
 
 	/*
@@ -374,7 +375,7 @@ again:
 		val = remote_clock;
 	}
 
-	if (!try_cmpxchg64(ptr, &old_val, val))
+	if (!raw_atomic64_try_cmpxchg(ptr, &old_val, val))
 		goto again;
 
 	return val;
