@@ -211,13 +211,13 @@
 			#clock-cells = <1>;
 			img,platform-regs = <&plat_regs>;
 		};
-	};
 
-	reboot: syscon-reboot {
-		compatible = "syscon-reboot";
-		regmap = <&plat_regs>;
-		offset = <0x10>;
-		mask = <0x10>;
+		reboot: reboot {
+			compatible = "syscon-reboot";
+			regmap = <&plat_regs>;
+			offset = <0x10>;
+			mask = <0x10>;
+		};
 	};
 
 	uart0: uart@17ffe000 {
