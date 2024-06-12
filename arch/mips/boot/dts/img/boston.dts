@@ -10,6 +10,7 @@
 	#address-cells = <1>;
 	#size-cells = <1>;
 	compatible = "img,boston";
+	model = "IMG Boston";
 
 	chosen {
 		stdout-path = "uart0:115200";
