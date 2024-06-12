@@ -7,6 +7,8 @@
 #include <irq.h>
 #include <linux/init.h>
 #include <linux/cpu.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/sched.h>
 #include <linux/sched/hotplug.h>
 #include <linux/sched/task_stack.h>
@@ -28,11 +30,11 @@ DEFINE_PER_CPU(int, cpu_state);
 
 #define LS_IPI_IRQ (MIPS_CPU_IRQ_BASE + 6)
 
-static void __iomem *ipi_set0_regs[16];
-static void __iomem *ipi_clear0_regs[16];
-static void __iomem *ipi_status0_regs[16];
-static void __iomem *ipi_en0_regs[16];
-static void __iomem *ipi_mailbox_buf[16];
+static void __iomem *ipi_set0_regs[16] __read_mostly;
+static void __iomem *ipi_clear0_regs[16] __read_mostly;
+static void __iomem *ipi_status0_regs[16] __read_mostly;
+static void __iomem *ipi_en0_regs[16] __read_mostly;
+static void __iomem *ipi_mailbox_buf[16] __read_mostly;
 static uint32_t core0_c0count[NR_CPUS];
 
 static u32 (*ipi_read_clear)(int cpu);
@@ -168,7 +170,7 @@ static void legacy_ipi_write_buf(int cpu, struct task_struct *idle)
 	nudge_writes();
 }
 
-static void csr_ipi_probe(void)
+static int csr_ipi_probe(void)
 {
 	if (cpu_has_csr() && csr_readl(LOONGSON_CSR_FEATURES) & LOONGSON_CSRF_IPI) {
 		ipi_read_clear = csr_ipi_read_clear;
@@ -176,193 +178,70 @@ static void csr_ipi_probe(void)
 		ipi_write_enable = csr_ipi_write_enable;
 		ipi_clear_buf = csr_ipi_clear_buf;
 		ipi_write_buf = csr_ipi_write_buf;
-	} else {
-		ipi_read_clear = legacy_ipi_read_clear;
-		ipi_write_action = legacy_ipi_write_action;
-		ipi_write_enable = legacy_ipi_write_enable;
-		ipi_clear_buf = legacy_ipi_clear_buf;
-		ipi_write_buf = legacy_ipi_write_buf;
+
+		return 0;
 	}
+
+	return -ENODEV;
 }
 
-static void ipi_set0_regs_init(void)
+static int ipi_regs_init(void)
 {
-	ipi_set0_regs[0] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE0_OFFSET + SET0);
-	ipi_set0_regs[1] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE1_OFFSET + SET0);
-	ipi_set0_regs[2] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE2_OFFSET + SET0);
-	ipi_set0_regs[3] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE3_OFFSET + SET0);
-	ipi_set0_regs[4] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE0_OFFSET + SET0);
-	ipi_set0_regs[5] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE1_OFFSET + SET0);
-	ipi_set0_regs[6] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE2_OFFSET + SET0);
-	ipi_set0_regs[7] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE3_OFFSET + SET0);
-	ipi_set0_regs[8] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE0_OFFSET + SET0);
-	ipi_set0_regs[9] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE1_OFFSET + SET0);
-	ipi_set0_regs[10] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE2_OFFSET + SET0);
-	ipi_set0_regs[11] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE3_OFFSET + SET0);
-	ipi_set0_regs[12] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE0_OFFSET + SET0);
-	ipi_set0_regs[13] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE1_OFFSET + SET0);
-	ipi_set0_regs[14] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE2_OFFSET + SET0);
-	ipi_set0_regs[15] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE3_OFFSET + SET0);
-}
+	struct device_node *np;
+	int ret, i, nodes, cores;
 
-static void ipi_clear0_regs_init(void)
-{
-	ipi_clear0_regs[0] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE0_OFFSET + CLEAR0);
-	ipi_clear0_regs[1] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE1_OFFSET + CLEAR0);
-	ipi_clear0_regs[2] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE2_OFFSET + CLEAR0);
-	ipi_clear0_regs[3] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE3_OFFSET + CLEAR0);
-	ipi_clear0_regs[4] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE0_OFFSET + CLEAR0);
-	ipi_clear0_regs[5] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE1_OFFSET + CLEAR0);
-	ipi_clear0_regs[6] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE2_OFFSET + CLEAR0);
-	ipi_clear0_regs[7] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE3_OFFSET + CLEAR0);
-	ipi_clear0_regs[8] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE0_OFFSET + CLEAR0);
-	ipi_clear0_regs[9] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE1_OFFSET + CLEAR0);
-	ipi_clear0_regs[10] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE2_OFFSET + CLEAR0);
-	ipi_clear0_regs[11] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE3_OFFSET + CLEAR0);
-	ipi_clear0_regs[12] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE0_OFFSET + CLEAR0);
-	ipi_clear0_regs[13] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE1_OFFSET + CLEAR0);
-	ipi_clear0_regs[14] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE2_OFFSET + CLEAR0);
-	ipi_clear0_regs[15] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE3_OFFSET + CLEAR0);
-}
+	ipi_read_clear = legacy_ipi_read_clear;
+	ipi_write_action = legacy_ipi_write_action;
+	ipi_write_enable = legacy_ipi_write_enable;
+	ipi_clear_buf = legacy_ipi_clear_buf;
+	ipi_write_buf = legacy_ipi_write_buf;
 
-static void ipi_status0_regs_init(void)
-{
-	ipi_status0_regs[0] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE0_OFFSET + STATUS0);
-	ipi_status0_regs[1] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE1_OFFSET + STATUS0);
-	ipi_status0_regs[2] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE2_OFFSET + STATUS0);
-	ipi_status0_regs[3] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE3_OFFSET + STATUS0);
-	ipi_status0_regs[4] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE0_OFFSET + STATUS0);
-	ipi_status0_regs[5] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE1_OFFSET + STATUS0);
-	ipi_status0_regs[6] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE2_OFFSET + STATUS0);
-	ipi_status0_regs[7] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE3_OFFSET + STATUS0);
-	ipi_status0_regs[8] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE0_OFFSET + STATUS0);
-	ipi_status0_regs[9] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE1_OFFSET + STATUS0);
-	ipi_status0_regs[10] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE2_OFFSET + STATUS0);
-	ipi_status0_regs[11] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE3_OFFSET + STATUS0);
-	ipi_status0_regs[12] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE0_OFFSET + STATUS0);
-	ipi_status0_regs[13] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE1_OFFSET + STATUS0);
-	ipi_status0_regs[14] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE2_OFFSET + STATUS0);
-	ipi_status0_regs[15] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE3_OFFSET + STATUS0);
-}
+	np = of_find_compatible_node(of_root, NULL, "loongson,csr-ipi");
+	if (np) {
+		ret = csr_ipi_probe();
+		of_node_put(np);
+		if (!ret)
+			return 0;
+		/* Fallthrough to legacy probing path */
+	}
 
-static void ipi_en0_regs_init(void)
-{
-	ipi_en0_regs[0] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE0_OFFSET + EN0);
-	ipi_en0_regs[1] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE1_OFFSET + EN0);
-	ipi_en0_regs[2] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE2_OFFSET + EN0);
-	ipi_en0_regs[3] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE3_OFFSET + EN0);
-	ipi_en0_regs[4] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE0_OFFSET + EN0);
-	ipi_en0_regs[5] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE1_OFFSET + EN0);
-	ipi_en0_regs[6] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE2_OFFSET + EN0);
-	ipi_en0_regs[7] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE3_OFFSET + EN0);
-	ipi_en0_regs[8] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE0_OFFSET + EN0);
-	ipi_en0_regs[9] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE1_OFFSET + EN0);
-	ipi_en0_regs[10] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE2_OFFSET + EN0);
-	ipi_en0_regs[11] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE3_OFFSET + EN0);
-	ipi_en0_regs[12] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE0_OFFSET + EN0);
-	ipi_en0_regs[13] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE1_OFFSET + EN0);
-	ipi_en0_regs[14] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE2_OFFSET + EN0);
-	ipi_en0_regs[15] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE3_OFFSET + EN0);
-}
+	np = of_find_compatible_node(of_root, NULL, "loongson,ls3a-ipi");
+	if (np) {
+		nodes = 4;
+		cores = 4;
+		goto found;
+	}
+	np = of_find_compatible_node(of_root, NULL, "loongson,ls2k-ipi");
+	if (np) {
+		nodes = 1;
+		cores = 2;
+		goto found;
+	}
+	pr_err("No compatible IPI node found\n");
 
-static void ipi_mailbox_buf_init(void)
-{
-	ipi_mailbox_buf[0] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE0_OFFSET + BUF);
-	ipi_mailbox_buf[1] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE1_OFFSET + BUF);
-	ipi_mailbox_buf[2] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE2_OFFSET + BUF);
-	ipi_mailbox_buf[3] = (void __iomem *)
-		(SMP_CORE_GROUP0_BASE + SMP_CORE3_OFFSET + BUF);
-	ipi_mailbox_buf[4] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE0_OFFSET + BUF);
-	ipi_mailbox_buf[5] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE1_OFFSET + BUF);
-	ipi_mailbox_buf[6] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE2_OFFSET + BUF);
-	ipi_mailbox_buf[7] = (void __iomem *)
-		(SMP_CORE_GROUP1_BASE + SMP_CORE3_OFFSET + BUF);
-	ipi_mailbox_buf[8] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE0_OFFSET + BUF);
-	ipi_mailbox_buf[9] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE1_OFFSET + BUF);
-	ipi_mailbox_buf[10] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE2_OFFSET + BUF);
-	ipi_mailbox_buf[11] = (void __iomem *)
-		(SMP_CORE_GROUP2_BASE + SMP_CORE3_OFFSET + BUF);
-	ipi_mailbox_buf[12] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE0_OFFSET + BUF);
-	ipi_mailbox_buf[13] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE1_OFFSET + BUF);
-	ipi_mailbox_buf[14] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE2_OFFSET + BUF);
-	ipi_mailbox_buf[15] = (void __iomem *)
-		(SMP_CORE_GROUP3_BASE + SMP_CORE3_OFFSET + BUF);
+	return -ENODEV;
+found:
+	for (i = 0; i < nodes; i++) {
+		int j;
+		void __iomem *base = of_iomap(np, i);
+
+		if (!base)
+			break;
+
+		for (j = 0; j < cores; j++) {
+			void __iomem *core_base = base + SMP_COREx_OFFSET(j);
+
+			ipi_set0_regs[i * cores + j] = core_base + SET0;
+			ipi_clear0_regs[i * cores + j] = core_base + CLEAR0;
+			ipi_status0_regs[i * cores + j] = core_base + STATUS0;
+			ipi_en0_regs[i * cores + j] = core_base + EN0;
+			ipi_mailbox_buf[i * cores + j] = core_base + BUF;
+		}
+	}
+
+	of_node_put(np);
+
+	return 0;
 }
 
 /*
@@ -468,6 +347,7 @@ static void __init loongson3_smp_setup(void)
 	int i = 0, num = 0; /* i: physical id, num: logical id */
 
 	init_cpu_possible(cpu_none_mask);
+	ipi_regs_init();
 
 	/* For unified kernel, NR_CPUS is the maximum possible value,
 	 * loongson_sysconf.nr_cpus is the really present value
@@ -493,12 +373,6 @@ static void __init loongson3_smp_setup(void)
 		num++;
 	}
 
-	csr_ipi_probe();
-	ipi_set0_regs_init();
-	ipi_clear0_regs_init();
-	ipi_status0_regs_init();
-	ipi_en0_regs_init();
-	ipi_mailbox_buf_init();
 	ipi_write_enable(0);
 
 	cpu_set_core(&cpu_data[0],

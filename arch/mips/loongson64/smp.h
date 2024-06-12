@@ -12,10 +12,7 @@ extern unsigned long long smp_group[4];
 #define SMP_CORE_GROUP3_BASE	(smp_group[3])
 
 /* 4 cores in each group(node) */
-#define SMP_CORE0_OFFSET  0x000
-#define SMP_CORE1_OFFSET  0x100
-#define SMP_CORE2_OFFSET  0x200
-#define SMP_CORE3_OFFSET  0x300
+#define SMP_COREx_OFFSET(x)  (x * 0x100)
 
 /* ipi registers offsets */
 #define STATUS0  0x00
