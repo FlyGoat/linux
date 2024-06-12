@@ -24,6 +24,7 @@ properties:
       - brcm,bmips5000
       - brcm,bmips5200
       - img,i6500
+      - img,mips
       - ingenic,xburst-fpu1.0-mxu1.1
       - ingenic,xburst-fpu2.0-mxu2.0
       - ingenic,xburst-mxu1.0
