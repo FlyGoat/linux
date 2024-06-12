@@ -13,11 +13,11 @@
 	model = "IMG Boston";
 
 	chosen {
-		stdout-path = "uart0:115200";
+		stdout-path = "serial0:115200";
 	};
 
 	aliases {
-		uart0 = &uart0;
+		serial0 = &uart0;
 	};
 
 	cpus {
@@ -218,7 +218,7 @@
 		};
 	};
 
-	uart0: uart@17ffe000 {
+	uart0: serial@17ffe000 {
 		compatible = "ns16550a";
 		reg = <0x17ffe000 0x1000>;
 		reg-shift = <2>;
