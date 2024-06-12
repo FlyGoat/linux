@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mfd/img,boston-platform-regs.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Imagination Technologies Boston Platform Registers
+
+maintainers:
+  - Jiaxun Yang <jiaxun.yang@flygoat.com>
+
+properties:
+  compatible:
+    items:
+      - const: img,boston-platform-regs
+      - const: syscon
+      - const: simple-mfd
+
+  reg:
+    maxItems: 1
+
+  clock-controller:
+    type: object
+
+    description: Boston Clock Controller Device Node
+      The clock consumer should specify the desired clock by having the clock
+      ID in its "clocks" phandle cell.
+      See include/dt-bindings/clock/boston-clock.h for the full list of boston
+      clock IDs.
+
+    properties:
+      "#clock-cells":
+        const: 1
+
+      compatible:
+        const: img,boston-clock
+
+    required:
+      - "#clock-cells"
+      - compatible
+
+    additionalProperties: false
+
+  reboot:
+    $ref: /schemas/power/reset/syscon-reboot.yaml#
+
+required:
+  - compatible
+  - reg
+  - clock-controller
+  - reboot
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/boston-clock.h>
+
+    plat_regs: system-controller@17ffd000 {
+      compatible = "img,boston-platform-regs", "syscon", "simple-mfd";
+      reg = <0x17ffd000 0x1000>;
+
+      clk_boston: clock-controller {
+        compatible = "img,boston-clock";
+        #clock-cells = <1>;
+      };
+
+      reboot: reboot {
+        compatible = "syscon-reboot";
+        regmap = <&plat_regs>;
+        offset = <0x10>;
+        mask = <0x10>;
+      };
+    };
