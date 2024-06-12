@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mips/img/devices.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Imagination Technologies MIPS based Platforms
+
+maintainers:
+  - Jiaxun Yang <jiaxun.yang@flygoat.com>
+
+properties:
+  $nodename:
+    const: '/'
+  compatible:
+    oneOf:
+
+      - description: IMG Boston
+        const: img,boston
+
+      - description: IMG Marduk (Creator Ci40)
+        items:
+          - const: img,pistachio-marduk
+          - const: img,pistachio
+
+      - description: Imagination University Program MIPSfpga
+        items:
+          - const: img,xilfpga
+          - const: digilent,nexys4ddr
+
+additionalProperties: true
+
+...
