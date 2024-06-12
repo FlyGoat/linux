@@ -131,7 +131,6 @@
 
 			#address-cells = <3>;
 			#size-cells = <2>;
-			#interrupt-cells = <1>;
 
 			eg20t_bridge@1,0,0 {
 				compatible = "pci8086,8800";
@@ -139,7 +138,6 @@
 
 				#address-cells = <3>;
 				#size-cells = <2>;
-				#interrupt-cells = <1>;
 
 				eg20t_phub@2,0,0 {
 					compatible = "pci8086,8801";
