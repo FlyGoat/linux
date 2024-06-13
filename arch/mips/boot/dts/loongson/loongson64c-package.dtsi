@@ -13,6 +13,15 @@
 		compatible = "mti,cpu-interrupt-controller";
 	};
 
+	ipi: ipi@3ff01000 {
+		compatible = "loongson,ls3a-ipi";
+		interrupts-extended = <&cpuintc 6>;
+		reg = <0x0000000 0x3ff01000 0 0x1000>,
+		      <0x0001000 0x3ff01000 0 0x1000>,
+		      <0x0002000 0x3ff01000 0 0x1000>,
+		      <0x0003000 0x3ff01000 0 0x1000>;
+	};
+
 	package0: bus@1fe00000 {
 		compatible = "simple-bus";
 		#address-cells = <2>;

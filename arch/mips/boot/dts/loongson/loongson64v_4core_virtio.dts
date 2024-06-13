@@ -8,11 +8,38 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "loongson,gs264";
+			reg = <0x0>;
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "loongson,gs264";
+			reg = <0x1>;
+		};
+	};
+
+
 	cpuintc: interrupt-controller {
 		#address-cells = <0>;
 		#interrupt-cells = <1>;
 		interrupt-controller;
 		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	ipi: ipi@3ff01000 {
+		compatible = "loongson,ls3a-ipi", "loongson,csr-ipi";
+		interrupts-extended = <&cpuintc 6>;
+		reg = <0x0000000 0x3ff01000 0 0x1000>,
+		<0x0001000 0x3ff01000 0 0x1000>,
+		<0x0002000 0x3ff01000 0 0x1000>,
+		<0x0003000 0x3ff01000 0 0x1000>;
 	};
 
 	package0: bus@1fe00000 {

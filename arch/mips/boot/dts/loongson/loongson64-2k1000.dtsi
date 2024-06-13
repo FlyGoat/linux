@@ -21,6 +21,14 @@
 			#clock-cells = <1>;
 			clocks = <&cpu_clk>;
 		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "loongson,gs264";
+			reg = <0x1>;
+			#clock-cells = <1>;
+			clocks = <&cpu_clk>;
+		};
 	};
 
 	memory@200000 {
@@ -42,6 +50,12 @@
 		#interrupt-cells = <1>;
 		interrupt-controller;
 		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	ipi@3ff01000 {
+		compatible = "loongson,ls2k-ipi";
+		interrupts-extended = <&cpuintc 6>;
+		reg = <0 0x1fe01000 0 0x1000>;
 	};
 
 	package0: bus@10000000 {

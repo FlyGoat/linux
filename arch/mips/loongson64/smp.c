@@ -170,7 +170,7 @@ static void legacy_ipi_write_buf(int cpu, struct task_struct *idle)
 	nudge_writes();
 }
 
-static int csr_ipi_probe(void)
+static int __init csr_ipi_probe(void)
 {
 	if (cpu_has_csr() && csr_readl(LOONGSON_CSR_FEATURES) & LOONGSON_CSRF_IPI) {
 		ipi_read_clear = csr_ipi_read_clear;
@@ -185,7 +185,7 @@ static int csr_ipi_probe(void)
 	return -ENODEV;
 }
 
-static int ipi_regs_init(void)
+static int __init ipi_regs_init(void)
 {
 	struct device_node *np;
 	int ret, i, nodes, cores;
@@ -242,6 +242,36 @@ found:
 	of_node_put(np);
 
 	return 0;
+}
+
+static void __init fdt_smp_setup(void)
+{
+	unsigned int cpu, cpuid;
+	struct device_node *node = NULL;
+
+	loongson_sysconf.nr_cpus = 0;
+
+	for_each_of_cpu_node(node) {
+		if (!of_device_is_available(node))
+			continue;
+
+		cpuid = of_get_cpu_hwid(node, 0);
+		if (cpuid >= nr_cpu_ids)
+			continue;
+
+		if (cpuid == loongson_sysconf.boot_cpu_id) {
+			cpu = 0;
+		} else {
+			cpu = cpumask_next_zero(-1, cpu_present_mask);
+		}
+
+		set_cpu_possible(cpu, true);
+		set_cpu_present(cpu, true);
+		__cpu_number_map[cpuid] = cpu;
+		__cpu_logical_map[cpu] = cpuid;
+
+		loongson_sysconf.nr_cpus++;
+	}
 }
 
 /*
@@ -349,29 +379,35 @@ static void __init loongson3_smp_setup(void)
 	init_cpu_possible(cpu_none_mask);
 	ipi_regs_init();
 
-	/* For unified kernel, NR_CPUS is the maximum possible value,
-	 * loongson_sysconf.nr_cpus is the really present value
-	 */
-	while (i < loongson_sysconf.nr_cpus) {
-		if (loongson_sysconf.reserved_cpus_mask & (1<<i)) {
-			/* Reserved physical CPU cores */
-			__cpu_number_map[i] = -1;
-		} else {
-			__cpu_number_map[i] = num;
-			__cpu_logical_map[num] = i;
-			set_cpu_possible(num, true);
-			/* Loongson processors are always grouped by 4 */
-			cpu_set_cluster(&cpu_data[num], i / 4);
-			num++;
-		}
-		i++;
-	}
-	pr_info("Detected %i available CPU(s)\n", num);
+	loongson_sysconf.nr_cpus = 0;
 
-	while (num < loongson_sysconf.nr_cpus) {
-		__cpu_logical_map[num] = -1;
-		num++;
+	if (loongson_sysconf.nr_cpus == 0) {
+		fdt_smp_setup();
+	} else {
+		/* 
+		 * For unified kernel, NR_CPUS is the maximum possible value,
+		 * loongson_sysconf.nr_cpus is the really present value
+		 */
+		while (i < loongson_sysconf.nr_cpus) {
+			if (loongson_sysconf.reserved_cpus_mask & (1<<i)) {
+				/* Reserved physical CPU cores */
+				__cpu_number_map[i] = -1;
+			} else {
+				__cpu_number_map[i] = num;
+				__cpu_logical_map[num] = i;
+				set_cpu_possible(num, true);
+				/* Loongson processors are always grouped by 4 */
+				cpu_set_cluster(&cpu_data[num], i / 4);
+				num++;
+			}
+			i++;
+		}
 	}
+
+	if (!loongson_sysconf.cores_per_package)
+		loongson_sysconf.cores_per_package = num_possible_cpus();
+
+	pr_info("Detected %i available CPU(s)\n", num_possible_cpus());
 
 	ipi_write_enable(0);
 

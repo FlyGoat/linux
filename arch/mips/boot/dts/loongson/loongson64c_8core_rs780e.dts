@@ -9,6 +9,13 @@
 	compatible = "loongson,loongson64c-8core-rs780e";
 };
 
+&ipi {
+	reg = <0x0000000 0x3ff01000 0 0x1000>,
+	      <0x0001000 0x3ff05000 0 0x1000>,
+	      <0x0002000 0x3ff09000 0 0x1000>,
+	      <0x0003000 0x3ff0d000 0 0x1000>;
+};
+
 &package0 {
 	htpic: interrupt-controller@1efdfb000080 {
 		compatible = "loongson,htpic-1.0";
