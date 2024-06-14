@@ -480,7 +480,7 @@ config KHADAS_MCU_FAN_THERMAL
 
 config LOONGSON2_THERMAL
 	tristate "Loongson-2 SoC series thermal driver"
-	depends on LOONGARCH || COMPILE_TEST
+	depends on LOONGARCH || MIPS || COMPILE_TEST
 	depends on OF
 	help
 	  Support for Thermal driver found on Loongson-2 SoC series platforms.

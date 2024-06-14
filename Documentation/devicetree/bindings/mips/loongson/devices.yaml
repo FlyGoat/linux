@@ -49,6 +49,12 @@ properties:
               - loongmasses,smartloong-1c
           - const: loongson,ls1c
 
+      - description: Loongson-2K1000 based boards
+        items:
+          - enum:
+              - loongson,loongspn64r-2core-ls2k1000
+          - const: loongson,ls2k1000
+
 additionalProperties: true
 
 ...

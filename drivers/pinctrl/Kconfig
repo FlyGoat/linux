@@ -278,7 +278,7 @@ config PINCTRL_FALCON
 
 config PINCTRL_LOONGSON2
 	tristate "Pinctrl driver for the Loongson-2 SoC"
-	depends on OF && (LOONGARCH || COMPILE_TEST)
+	depends on OF && (LOONGARCH || MIPS || COMPILE_TEST)
 	select PINMUX
 	select GENERIC_PINCONF
 	help

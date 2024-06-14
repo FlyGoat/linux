@@ -336,7 +336,7 @@ config COMMON_CLK_LOCHNAGAR
 
 config COMMON_CLK_LOONGSON2
 	bool "Clock driver for Loongson-2 SoC"
-	depends on LOONGARCH || COMPILE_TEST
+	depends on LOONGARCH || MIPS || COMPILE_TEST
 	help
           This driver provides support for clock controller on Loongson-2 SoC.
           The clock controller can generates and supplies clock to various
