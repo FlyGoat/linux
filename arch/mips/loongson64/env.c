@@ -51,7 +51,7 @@ void __init prom_dtb_init_env(void)
 	if ((fw_arg2 < CKSEG0 || fw_arg2 > CKSEG1)
 		&& (fw_arg2 < XKPHYS || fw_arg2 > XKSEG))
 
-		loongson_fdt_blob = __dtb_loongson64_2core_2k1000_begin;
+		loongson_fdt_blob = __dtb_loongson64r_2core_2k1000_begin;
 	else
 		loongson_fdt_blob = (void *)fw_arg2;
 }
@@ -228,7 +228,7 @@ void __init prom_lefi_init_env(void)
 			break;
 		}
 	} else if ((read_c0_prid() & PRID_IMP_MASK) == PRID_IMP_LOONGSON_64R) {
-		loongson_fdt_blob = __dtb_loongson64_2core_2k1000_begin;
+		loongson_fdt_blob = __dtb_loongson64r_2core_2k1000_begin;
 	} else if ((read_c0_prid() & PRID_IMP_MASK) == PRID_IMP_LOONGSON_64G) {
 		if (loongson_sysconf.bridgetype == LS7A)
 			loongson_fdt_blob = __dtb_loongson64g_4core_ls7a_begin;
