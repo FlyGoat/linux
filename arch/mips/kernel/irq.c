@@ -26,9 +26,26 @@
 #include <linux/atomic.h>
 #include <linux/uaccess.h>
 
+#include <asm/irq_cpu.h>
 #include <asm/ipi.h>
 
 void *irq_stack[NR_CPUS];
+
+int __weak get_mips_sw_int(int hwirq)
+{
+	/* Only SW0 and SW1 */
+	BUG_ON(hwirq > 1);
+
+	/* SW int is routed to external source */
+	if (cpu_has_veic)
+		return 0;
+
+#ifdef CONFIG_IRQ_MIPS_CPU
+	return mips_cpu_get_sw_int(hwirq)
+#endif	
+
+	return MIPS_CPU_IRQ_BASE + hwirq;
+}
 
 /*
  * 'what should we do if we get a hw irq event on an illegal vector'.
