@@ -605,6 +605,14 @@ config IRQ_LOONGARCH_CPU
 	  irq chip hierarchy on LoongArch platforms please read the document
 	  Documentation/arch/loongarch/irq-chip-model.rst.
 
+config LOONGSON_IPI
+	bool "Loongson Inter-Processor Interrupts"
+	depends on MACH_LOONGSON64
+	default y
+	select GENERIC_IRQ_IPI
+	help
+	  Support for the Loongson Inter-Processor Interrupts.
+
 config LOONGSON_LIOINTC
 	bool "Loongson Local I/O Interrupt Controller"
 	depends on MACH_LOONGSON64
