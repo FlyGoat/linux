@@ -206,7 +206,7 @@
 		compatible = "img,boston-platform-regs", "syscon", "simple-mfd";
 		reg = <0x17ffd000 0x1000>;
 
-		clk_boston: clock {
+		clk_boston: clock-controller {
 			compatible = "img,boston-clock";
 			#clock-cells = <1>;
 		};
