@@ -209,6 +209,7 @@
 		clk_boston: clock {
 			compatible = "img,boston-clock";
 			#clock-cells = <1>;
+			img,platform-regs = <&plat_regs>;
 		};
 	};
 
