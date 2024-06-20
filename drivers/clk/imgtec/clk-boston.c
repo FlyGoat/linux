@@ -37,10 +37,14 @@ static void __init clk_boston_setup(struct device_node *np)
 	struct clk_hw *hw;
 	int err;
 
-	regmap = syscon_node_to_regmap(np->parent);
+	regmap = syscon_regmap_lookup_by_phandle(np, "img,platform-regs");
 	if (IS_ERR(regmap)) {
-		pr_err("failed to find regmap\n");
-		return;
+		/* For compatibility with old DTs */
+		regmap = syscon_regmap_lookup_by_compatible("img,boston-platform-regs");
+		if (IS_ERR(regmap)) {
+			pr_err("failed to find regmap\n");
+			return;
+		}
 	}
 
 	err = regmap_read(regmap, BOSTON_PLAT_MMCMDIV, &mmcmdiv);
