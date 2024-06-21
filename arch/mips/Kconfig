@@ -1574,6 +1574,7 @@ config CPU_TX49XX
 config CPU_R5000
 	bool "R5000"
 	depends on SYS_HAS_CPU_R5000
+	select WAR_R5000_LLSC
 	select CPU_SUPPORTS_32BIT_KERNEL
 	select CPU_SUPPORTS_64BIT_KERNEL
 	select CPU_SUPPORTS_HUGEPAGES
@@ -1593,6 +1594,7 @@ config CPU_R5500
 config CPU_NEVADA
 	bool "RM52xx"
 	depends on SYS_HAS_CPU_NEVADA
+	select WAR_R5000_LLSC
 	select CPU_SUPPORTS_32BIT_KERNEL
 	select CPU_SUPPORTS_64BIT_KERNEL
 	select CPU_SUPPORTS_HUGEPAGES
@@ -2537,6 +2539,13 @@ config WAR_TX49XX_ICACHE_INDEX_INV
 # I-cache line worth of instructions being fetched may case spurious
 # exceptions.
 config WAR_ICACHE_REFILLS
+	bool
+
+# R5000 has an interesting "restriction": ll(d)/sc(d) instructions to
+# XKPHYS region simply do uncached bus requests. This breaks all the
+# atomic bitops functions. so, for 64bit IP32 kernel we just don't use
+# ll/sc. This does not affect userland.
+config WAR_R5000_LLSC
 	bool
 
 # On the R10000 up to version 2.6 (not sure about 2.7) there is a bug that
