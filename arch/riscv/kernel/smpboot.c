@@ -39,8 +39,6 @@
 
 #include "head.h"
 
-static DECLARE_COMPLETION(cpu_running);
-
 void __init smp_prepare_cpus(unsigned int max_cpus)
 {
 	int cpuid;
@@ -181,23 +179,12 @@ static int start_secondary_cpu(int cpu, struct task_struct *tidle)
 	return -EOPNOTSUPP;
 }
 
-int __cpu_up(unsigned int cpu, struct task_struct *tidle)
+int arch_cpuhp_kick_ap_alive(unsigned int cpu, struct task_struct *tidle)
 {
 	int ret = 0;
 	tidle->thread_info.cpu = cpu;
 
 	ret = start_secondary_cpu(cpu, tidle);
-	if (!ret) {
-		wait_for_completion_timeout(&cpu_running,
-					    msecs_to_jiffies(1000));
-
-		if (!cpu_online(cpu)) {
-			pr_crit("CPU%u: failed to come online\n", cpu);
-			ret = -EIO;
-		}
-	} else {
-		pr_crit("CPU%u: failed to start\n", cpu);
-	}
 
 	return ret;
 }
@@ -223,6 +210,7 @@ asmlinkage __visible void smp_callin(void)
 			return;
 	}
 
+	cpuhp_ap_sync_alive();
 	/* All kernel threads share the same mm context.  */
 	mmgrab(mm);
 	current->active_mm = mm;
@@ -243,7 +231,6 @@ asmlinkage __visible void smp_callin(void)
 	 */
 	local_flush_icache_all();
 	local_flush_tlb_all();
-	complete(&cpu_running);
 	/*
 	 * Disable preemption before enabling interrupts, so we don't try to
 	 * schedule a CPU that hasn't actually started yet.
