@@ -231,6 +231,10 @@ config GENERIC_ARCH_NUMA
 	  Enable support for generic NUMA implementation. Currently, RISC-V
 	  and ARM64 use it.
 
+config ARCH_PLATFORM_NUMA
+	bool
+	depends on GENERIC_ARCH_NUMA
+
 config FW_DEVLINK_SYNC_STATE_TIMEOUT
 	bool "sync_state() behavior defaults to timeout instead of strict"
 	help
