@@ -1,0 +1,51 @@
+List of compliance requirements
+===============================
+
+Descriptions of section entries and preferred order
+---------------------------------------------------
+
+	M: *Mail* The email addresses of the entity that is the subject of the
+	    requirement, accepting regex:
+	    FullName <address@domain> or <*@domain>
+	S: *Status*, one of the following:
+	   No Participation:	Any participation in the project is prohibited.
+	   No Maintainer:	Act as a maintainer for the project is prohibited.
+	   Warning:		Participation in the project is allowed,
+	   			but warnings are issued to other participants.
+	R: *Reason* The reason for the requirement.
+
+Compliance List
+---------------
+
+.. note:: This list is not exhaustive. The information provided on the list
+          is not to be construed as legal advice.
+
+BAE SYSTEMS LAND AND ARMAMENTS
+M:	<*@baesystems.com>
+S:	Warning
+R:	PRC MFA Sanction List
+
+BAIKAL ELECTRONICS JSC
+M:	<*@baikalelectronics.ru>
+M:	Serge Semin <fancer.lancer@gmail.com>
+S:	No Maintainer
+R:	US SDN List (RUSSIA-EO14024)
+
+LIMITED LIABILITY COMPANY OMP
+M:	<*@omp.ru>
+S:	No Maintainer
+R:	US SDN List (RUSSIA-EO14024)
+
+MOSCOW STATE UNIVERSITY
+M:	<*@msu.ru>
+M:	<*@jurassic.park.msu.ru>
+S:	No Maintainer
+
+NetUP LLC
+M:	<*@netup.ru>
+M:	<*@netup.tv>
+S:	No Maintainer
+
+SBER DEVICES
+M:	<*@sberdevices.ru>
+S:	No Maintainer

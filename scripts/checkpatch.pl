@@ -30,6 +30,7 @@ my $tree = 1;
 my $chk_signoff = 1;
 my $chk_fixes_tag = 1;
 my $chk_patch = 1;
+my $chk_compliance = 1;
 my $tst_only;
 my $emacs = 0;
 my $terse = 0;
@@ -74,6 +75,9 @@ my $allow_c99_comments = 1; # Can be overridden by --ignore C99_COMMENT_TOLERANC
 my $git_command ='export LANGUAGE=en_US.UTF-8; git';
 my $tabsize = 8;
 my ${CONFIG_} = "CONFIG_";
+
+my @participants = (); # For author and any tags
+my @new_maintainers = ();
 
 my %maybe_linker_symbol; # for externs in c exceptions, when seen in *vmlinux.lds.h
 
@@ -298,6 +302,7 @@ GetOptions(
 	'tree!'		=> \$tree,
 	'signoff!'	=> \$chk_signoff,
 	'fixes-tag!'	=> \$chk_fixes_tag,
+	'compliance!'	=> \$chk_compliance,
 	'patch!'	=> \$chk_patch,
 	'emacs!'	=> \$emacs,
 	'terse!'	=> \$terse,
@@ -1159,6 +1164,23 @@ sub is_SPDX_License_valid {
 	return 1;
 }
 
+sub check_participants_compliance {
+    my ($clauses, @maintainers) = @_;
+
+    return 0 if !$tree || !-e "$root/scripts/checkcompliance.pl";
+    return 0 unless @maintainers;
+
+    my @cmd = ('perl', "$root/scripts/checkcompliance.pl");
+
+    push @cmd, @$clauses if $clauses && @$clauses;
+    push @cmd, @maintainers;
+
+    my $output = `@cmd`;
+    my $exit_status = $? >> 8;
+
+    return $exit_status != 0 ? $output : 0;
+}
+
 my $camelcase_seeded = 0;
 sub seed_camelcase_includes {
 	return if ($camelcase_seeded);
@@ -1261,6 +1283,7 @@ sub git_commit_info {
 
 $chk_signoff = 0 if ($file);
 $chk_fixes_tag = 0 if ($file);
+$chk_compliance = 0 if ($file);
 
 my @rawlines = ();
 my @lines = ();
@@ -3076,6 +3099,7 @@ sub process {
 				ERROR("BAD_SIGN_OFF",
 				      "Unrecognized email address: '$email'\n" . $herecurr);
 			} else {
+				push @participants, $suggested_email;
 				my $dequoted = $suggested_email;
 				$dequoted =~ s/^"//;
 				$dequoted =~ s/" </ </;
@@ -3701,6 +3725,12 @@ sub process {
 						     "Misordered MAINTAINERS entry - list file patterns in alphabetic order\n" . $hereprev);
 					}
 				}
+			}
+# Append to new_maintainers list
+			my $maintainer_line = $rawline;
+			if ($maintainer_line =~ /^\+[MR]:\s*(.*)/) {
+				$maintainer_line =~ s/^\s*//;
+				push @new_maintainers, $maintainer_line;
 			}
 		}
 
@@ -7743,6 +7773,19 @@ sub process {
 				     "From:/Signed-off-by: email subaddress mismatch: $sob_msg\n");
 			}
 		}
+	}
+
+	if ($chk_compliance) {
+		my $chk_results;
+
+		$chk_results = check_participants_compliance(["--maintainers"], @new_maintainers);
+		ERROR("COMPLIANCE_MAINTAINERS", "$chk_results\n") if $chk_results;
+
+		$chk_results = check_participants_compliance(["--participation"], @participants);
+		ERROR("COMPLIANCE_PARTICIPATION", "$chk_results\n") if $chk_results;
+
+		$chk_results = check_participants_compliance(["--warning"], (@new_maintainers, @participants));
+		ERROR("COMPLIANCE_WARNING", "$chk_results\n") if $chk_results;
 	}
 
 	print report_dump();
