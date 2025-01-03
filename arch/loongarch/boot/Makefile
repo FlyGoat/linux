@@ -15,6 +15,31 @@ targets := vmlinux.elf
 $(obj)/vmlinux.elf: vmlinux FORCE
 	$(call if_changed,strip)
 
+targets += Image Image.*
+$(obj)/Image: vmlinux FORCE
+	$(call if_changed,objcopy)
+
+$(obj)/Image.gz: $(obj)/Image FORCE
+	$(call if_changed,gzip)
+
+$(obj)/Image.bz2: $(obj)/Image FORCE
+	$(call if_changed,bzip2)
+
+$(obj)/Image.lz4: $(obj)/Image FORCE
+	$(call if_changed,lz4)
+
+$(obj)/Image.lzma: $(obj)/Image FORCE
+	$(call if_changed,lzma)
+
+$(obj)/Image.lzo: $(obj)/Image FORCE
+	$(call if_changed,lzo)
+
+$(obj)/Image.zst: $(obj)/Image FORCE
+	$(call if_changed,zstd)
+
+$(obj)/Image.xz: $(obj)/Image FORCE
+	$(call if_changed,xzkern)
+
 targets += vmlinux.efi
 $(obj)/vmlinux.efi: vmlinux FORCE
 	$(call if_changed,objcopy)

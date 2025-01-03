@@ -3,19 +3,22 @@
 # Author: Huacai Chen <chenhuacai@loongson.cn>
 # Copyright (C) 2020-2022 Loongson Technology Corporation Limited
 
-boot	:= arch/loongarch/boot
-
 KBUILD_DEFCONFIG := loongson3_defconfig
 KBUILD_DTBS      := dtbs
 
-image-name-y			:= vmlinux
-image-name-$(CONFIG_EFI_ZBOOT)	:= vmlinuz
+boot	:= arch/loongarch/boot
+boot-image-y				:= Image
+boot-image-$(CONFIG_KERNEL_BZIP2)	:= Image.bz2
+boot-image-$(CONFIG_KERNEL_GZIP)	:= Image.gz
+boot-image-$(CONFIG_KERNEL_LZ4)		:= Image.lz4
+boot-image-$(CONFIG_KERNEL_LZMA)	:= Image.lzma
+boot-image-$(CONFIG_KERNEL_LZO)		:= Image.lzo
+boot-image-$(CONFIG_KERNEL_ZSTD)	:= Image.zst
+boot-image-$(CONFIG_KERNEL_XZ)		:= Image.xz
+boot-image-$(CONFIG_EFI_STUB)		:= vmlinux.efi
+boot-image-$(CONFIG_EFI_ZBOOT)		:= vmlinuz.efi
 
-ifndef CONFIG_EFI_STUB
-KBUILD_IMAGE	:= $(boot)/vmlinux.elf
-else
-KBUILD_IMAGE	:= $(boot)/$(image-name-y).efi
-endif
+KBUILD_IMAGE				:= $(boot)/$(boot-image-y)
 
 #
 # Select the object file format to substitute into the linker script.
@@ -169,12 +172,15 @@ endif
 
 vdso-install-y += arch/loongarch/vdso/vdso.so.dbg
 
+BOOT_TARGETS := Image Image.gz Image.bz2 Image.lz4 Image.lzma Image.lzo Image.zst Image.xz loader loader.bin vmlinux.efi vmlinuz.efi
+
 all:	$(notdir $(KBUILD_IMAGE)) $(KBUILD_DTBS)
 
-vmlinuz.efi: vmlinux.efi
+Image.gz Image.bz2 Image.lz4 Image.lzma Image.lzo Image.zst Image.xz loader xipImage vmlinuz.efi: Image
 
-vmlinux.elf vmlinux.efi vmlinuz.efi: vmlinux
-	$(Q)$(MAKE) $(build)=$(boot) $(bootvars-y) $(boot)/$@
+$(BOOT_TARGETS): vmlinux
+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+	@$(kecho) '  Kernel: $(boot)/$@ is ready'
 
 install:
 	$(Q)install -D -m 755 $(KBUILD_IMAGE) $(INSTALL_PATH)/$(image-name-y)-$(KERNELRELEASE)

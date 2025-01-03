@@ -10,24 +10,39 @@
 #include <asm/asmmacro.h>
 #include <asm/bug.h>
 #include <asm/regdef.h>
+#include <asm/image.h>
 #include <asm/loongarch.h>
 #include <asm/stackframe.h>
-
-#ifdef CONFIG_EFI_STUB
-
-#include "efi-header.S"
 
 	__HEAD
 
 _head:
-	.word	MZ_MAGIC		/* "MZ", MS-DOS header */
-	.org	0x8
+#ifdef CONFIG_EFI_STUB
+	/*
+	 * This instruction decodes to "MZ" ASCII required by UEFI.
+	 */
+	add.w	t1, t6, fp		/* code0 */
+#else
+	nop				/* code0 */
+#endif
+	b	kernel_entry		/* code1 */
 	.dword	_kernel_entry		/* Kernel entry point (physical address) */
 	.dword	_kernel_asize		/* Kernel image effective size */
 	.quad	PHYS_LINK_KADDR		/* Kernel image load offset from start of RAM */
-	.org	0x38			/* 0x20 ~ 0x37 reserved */
-	.long	LINUX_PE_MAGIC
+	.long	__HEAD_FLAGS		/* Kernel image flags */
+	.long	LOONGARCH_HEADER_VERSION /* Header version */
+	.quad	0			/* res1 */
+	.quad	0			/* res2 */
+	.long	LOONGARCH_IMAGE_MAGIC
+#ifdef CONFIG_EFI_STUB
 	.long	pe_header - _head	/* Offset to the PE header */
+#else
+	.long	0			/* Reserved */
+#endif
+
+#ifdef CONFIG_EFI_STUB
+
+#include "efi-header.S"
 
 pe_header:
 	__EFI_PE_HEADER
